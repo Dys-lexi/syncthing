@@ -211,6 +211,19 @@ class ProgressDisplay:
                 "Speed:",
                 self._format_speed(self._get_total_speed())
             )
+        elif self.stats['phase'] == 'monitoring':
+            grid.add_row(
+                "Status:",
+                Text("Watching for file changes...", style="blue"),
+                "Files Synced:",
+                f"{self.stats.get('total_synced_count', 0)} total"
+            )
+            if self.stats.get('pending_count', 0) > 0:
+                grid.add_row(
+                    "Pending:",
+                    Text(f"{self.stats['pending_count']} files waiting", style="yellow"),
+                    "", ""
+                )
         
         return Panel(grid, title="[bold]Homely Copier Status[/bold]", border_style="cyan")
     
