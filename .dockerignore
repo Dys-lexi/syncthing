@@ -1,0 +1,19 @@
+# Ignore local directories
+copierbackup/
+cache/
+*.pyc
+__pycache__/
+.git/
+.gitignore
+README.md
+*.hash
+
+# Ignore any local test data
+test*/
+*.log
+
+# Keep only essential files
+# simple_sync_v5.py
+# requirements.txt
+# Dockerfile
+# docker-compose.yml

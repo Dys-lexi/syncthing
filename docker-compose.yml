@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  homely-copier:
+    build: .
+    image: homely-copier:latest
+    volumes:
+      # Mount config file
+      - ./config.yaml:/config/config.yaml:ro
+      
+      # Mount input directories (add more as needed)
+      # Example: - /path/to/your/data:/inputs/data:ro
+      - /home/lexi/CORE:/inputs/CORE:ro
+      
+      # Mount output directory
+      - ./copierbackup:/output
+      
+      # Mount cache (optional - can use tmpfs for performance)
+      - cache:/cache
+    
+    # Run in watch mode
+    command: ["--config", "/config/config.yaml", "--watch"]
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Environment variables (optional)
+    environment:
+      - PYTHONUNBUFFERED=1
+      
+    # Use init to handle signals properly
+    init: true
+
+volumes:
+  cache:
+    driver: local

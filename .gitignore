@@ -7,7 +7,9 @@
 !simple_sync_v5.py
 !requirements.txt
 !.gitignore
-
+!Dockerfile
+!docker-compose.yml
+!.dockerignore
 # Don't ignore the .git directory itself
 !.git
 !.git/**
