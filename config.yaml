@@ -1,0 +1,18 @@
+# Example configuration file
+inputs:
+  alternate:
+    path: /home/lexi/CORE
+output:
+  path: ./copierbackup
+  
+cache:
+  path: ./cache
+  
+transfer:
+  rate_limit_mbps: 100  # Megabytes per second (not megabit)
+  chunk_size: 1048576   # 1MB chunks
+  
+sync:
+  checksum_algorithm: sha256  # or md5
+  verify_after_copy: true
+  preserve_timestamps: true

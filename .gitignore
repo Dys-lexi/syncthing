@@ -1,0 +1,12 @@
+# Ignore everything
+*
+
+# But not these files
+!config.yaml
+!simple_sync_v5.py
+!requirements.txt
+!.gitignore
+
+# Don't ignore the .git directory itself
+!.git
+!.git/**
