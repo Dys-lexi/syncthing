@@ -919,10 +919,34 @@ class SimpleSync:
     def watch(self):
         """Watch input directories for changes and sync automatically."""
         self.console.print("[bold cyan]Starting watch mode...")
-        self.console.print("[yellow]Press Ctrl+C to stop watching")
+        self.console.print("[yellow]Running initial sync...")
         
-        # Initialize state
-        self.phase1_hash_directories()
+        # Run initial sync first
+        with Live(self.progress.create_display(), refresh_per_second=10, console=self.console) as live:
+            def update_display():
+                while True:
+                    live.update(self.progress.create_display())
+                    time.sleep(0.1)
+            
+            # Start display update thread
+            display_thread = threading.Thread(target=update_display, daemon=True)
+            display_thread.start()
+            
+            # Phase 1: Calculate hashes
+            self.phase1_hash_directories()
+            
+            # Phase 2: Cache all files
+            self.phase2_cache_all()
+            
+            # Phase 3: Sync to output
+            self.phase3_sync_output()
+        
+        # Clean up cache after initial sync
+        self.cleanup_cache()
+        
+        self.console.print("\n[bold green]Initial sync complete!")
+        self.console.print("[cyan]Now monitoring for changes...")
+        self.console.print("[yellow]Press Ctrl+C to stop watching")
         
         # Set up file system observers
         observer = Observer()
@@ -954,8 +978,13 @@ class SimpleSync:
                 
                 # Set monitoring phase
                 self.progress.set_phase('monitoring')
+                self.progress.stats['total_synced_count'] = 0
                 
                 while True:
+                    # Update pending count in stats
+                    with event_handler.lock:
+                        self.progress.stats['pending_count'] = len(event_handler.pending_files)
+                    
                     # Check for pending files every second
                     time.sleep(1.0)
                     
@@ -963,6 +992,9 @@ class SimpleSync:
                     if files_to_process:
                         self.console.print(f"\n[cyan]Processing {len(files_to_process)} changed files...")
                         self.sync_specific_files(files_to_process)
+                        
+                        # Update total synced count
+                        self.progress.stats['total_synced_count'] += len(files_to_process)
                         
                         # Clean up cache after sync
                         self.cleanup_cache()
