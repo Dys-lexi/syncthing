@@ -439,39 +439,8 @@ class SimpleSync:
         with open(path, 'r') as f:
             return yaml.safe_load(f)
     
-    def _get_hash_file_path(self, file_path: str) -> str:
-        """Get the path for the .hash file."""
-        return f"{file_path}.hash"
-    
-    def _read_cached_hash(self, file_path: str) -> Optional[str]:
-        """Read hash from .hash file if it exists and is valid."""
-        hash_file = self._get_hash_file_path(file_path)
-        
-        try:
-            if os.path.exists(hash_file):
-                file_mtime = os.path.getmtime(file_path)
-                hash_mtime = os.path.getmtime(hash_file)
-                
-                # If hash file is newer than file, use cached hash
-                if hash_mtime >= file_mtime:
-                    with open(hash_file, 'r') as f:
-                        return f.read().strip()
-        except (OSError, IOError):
-            pass
-        
-        return None
-    
-    def _save_hash(self, file_path: str, file_hash: str) -> None:
-        """Save hash to .hash file."""
-        hash_file = self._get_hash_file_path(file_path)
-        try:
-            with open(hash_file, 'w') as f:
-                f.write(file_hash)
-        except (OSError, IOError):
-            pass
-    
     def _calculate_hash(self, file_path: str, chunk_size: int = 65536) -> str:
-        """Calculate SHA256 hash of a file, using cache if available."""
+        """Calculate SHA256 hash of a file, using in-memory cache if available."""
         # Check in-memory cache first
         try:
             mtime = os.path.getmtime(file_path)
@@ -480,27 +449,21 @@ class SimpleSync:
                 if cached_mtime == mtime:
                     return cached_hash
         except (OSError, IOError):
-            pass
-        
-        # Check .hash file
-        cached_hash = self._read_cached_hash(file_path)
-        if cached_hash:
-            self.hash_cache[file_path] = (mtime, cached_hash)
-            return cached_hash
-        
+            mtime = None
+
         # Calculate hash
         sha256 = hashlib.sha256()
         try:
             with open(file_path, 'rb') as f:
                 while chunk := f.read(chunk_size):
                     sha256.update(chunk)
-            
+
             file_hash = sha256.hexdigest()
-            
-            # Cache it
-            self._save_hash(file_path, file_hash)
-            self.hash_cache[file_path] = (mtime, file_hash)
-            
+
+            # Cache in memory for this session
+            if mtime is not None:
+                self.hash_cache[file_path] = (mtime, file_hash)
+
             return file_hash
         except (OSError, IOError):
             return ""
@@ -768,13 +731,7 @@ class SimpleSync:
             
             # Copy metadata
             shutil.copystat(src, dst)
-            
-            # Copy hash file if it exists
-            src_hash_file = self._get_hash_file_path(src)
-            if os.path.exists(src_hash_file):
-                dst_hash_file = self._get_hash_file_path(dst)
-                shutil.copy2(src_hash_file, dst_hash_file)
-            
+
             return True
             
         except (OSError, IOError) as e:
